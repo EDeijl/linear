@@ -20,21 +20,17 @@
 -----------------------------------------------------------------------------
 module Linear.Vector
   ( Additive(..)
-  , E(..)
   , negated
   , (^*)
   , (*^)
   , (^/)
   , sumV
-  , basis
-  , basisFor
-  , scaled
   , outer
-  , unit
   ) where
 
 import Control.Applicative
-import Control.Lens
+import Control.Monad.Identity
+--import Control.Lens
 import Data.Complex
 #if __GLASGOW_HASKELL__ < 710
 import Data.Foldable as Foldable (Foldable, forM_, foldl')
@@ -60,8 +56,6 @@ import Linear.Instances ()
 -- $setup
 -- >>> import Linear.V2
 
--- | Basis element
-newtype E t = E { el :: forall x. Lens' (t x) x }
 
 infixl 6 ^+^, ^-^
 infixl 7 ^*, *^, ^/
@@ -372,39 +366,6 @@ f ^* a = fmap (*a) f
 (^/) :: (Functor f, Fractional a) => f a -> a -> f a
 f ^/ a = fmap (/a) f
 {-# INLINE (^/) #-}
-
--- | Produce a default basis for a vector space. If the dimensionality
--- of the vector space is not statically known, see 'basisFor'.
-basis :: (Additive t, Traversable t, Num a) => [t a]
-basis = basisFor (zero :: Additive v => v Int)
-
--- | Produce a default basis for a vector space from which the
--- argument is drawn.
-basisFor :: (Traversable t, Num a) => t b -> [t a]
-basisFor = \t ->
-   ifoldMapOf traversed ?? t $ \i _ ->
-     return                  $
-       iover  traversed ?? t $ \j _ ->
-         if i == j then 1 else 0
-{-# INLINABLE basisFor #-}
-
--- | Produce a diagonal (scale) matrix from a vector.
---
--- >>> scaled (V2 2 3)
--- V2 (V2 2 0) (V2 0 3)
-scaled :: (Traversable t, Num a) => t a -> t (t a)
-scaled = \t -> iter t (\i x -> iter t (\j _ -> if i == j then x else 0))
-  where
-  iter :: Traversable t => t a -> (Int -> a -> b) -> t b
-  iter x f = iover traversed f x
-{-# INLINE scaled #-}
-
--- | Create a unit vector.
---
--- >>> unit _x :: V2 Int
--- V2 1 0
-unit :: (Additive t, Num a) => ASetter' (t a) a -> t a
-unit l = set' l 1 zero
 
 -- | Outer (tensor) product of two vectors
 outer :: (Functor f, Functor g, Num a) => f a -> g a -> f (g a)

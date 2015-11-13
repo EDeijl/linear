@@ -28,13 +28,6 @@
 module Linear.V3
   ( V3(..)
   , cross, triple
-  , R1(..)
-  , R2(..)
-  , _yx
-  , R3(..)
-  , _xz, _yz, _zx, _zy
-  , _xzy, _yxz, _yzx, _zxy, _zyx
-  , ex, ey, ez
   ) where
 
 import Control.Applicative
@@ -42,7 +35,7 @@ import Control.DeepSeq (NFData(rnf))
 import Control.Monad (liftM)
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens hiding ((<.>))
+--import Control.Lens hiding ((<.>))
 import Data.Binary as Binary -- binary
 import Data.Bytes.Serial -- bytes
 import Data.Data
@@ -103,9 +96,6 @@ instance Foldable1 V3 where
   foldMap1 f (V3 a b c) = f a <> f b <> f c
   {-# INLINE foldMap1 #-}
 
-instance Traversable1 V3 where
-  traverse1 f (V3 a b c) = V3 <$> f a <.> f b <.> f c
-  {-# INLINE traverse1 #-}
 
 instance Apply V3 where
   V3 a b c <.> V3 d e f = V3 (a d) (b e) (c f)
@@ -215,64 +205,6 @@ instance Distributive V3 where
   distribute f = V3 (fmap (\(V3 x _ _) -> x) f) (fmap (\(V3 _ y _) -> y) f) (fmap (\(V3 _ _ z) -> z) f)
   {-# INLINE distribute #-}
 
--- | A space that distinguishes 3 orthogonal basis vectors: '_x', '_y', and '_z'. (It may have more)
-class R2 t => R3 t where
-  -- |
-  -- >>> V3 1 2 3 ^. _z
-  -- 3
-  _z :: Lens' (t a) a
-
-  _xyz :: Lens' (t a) (V3 a)
-
-_xz, _yz, _zx, _zy :: R3 t => Lens' (t a) (V2 a)
-
-_xz f = _xyz $ \(V3 a b c) -> f (V2 a c) <&> \(V2 a' c') -> V3 a' b c'
-{-# INLINE _xz #-}
-
-_yz f = _xyz $ \(V3 a b c) -> f (V2 b c) <&> \(V2 b' c') -> V3 a b' c'
-{-# INLINE _yz #-}
-
-_zx f = _xyz $ \(V3 a b c) -> f (V2 c a) <&> \(V2 c' a') -> V3 a' b c'
-{-# INLINE _zx #-}
-
-_zy f = _xyz $ \(V3 a b c) -> f (V2 c b) <&> \(V2 c' b') -> V3 a b' c'
-{-# INLINE _zy #-}
-
-_xzy, _yxz, _yzx, _zxy, _zyx :: R3 t => Lens' (t a) (V3 a)
-
-_xzy f = _xyz $ \(V3 a b c) -> f (V3 a c b) <&> \(V3 a' c' b') -> V3 a' b' c'
-{-# INLINE _xzy #-}
-
-_yxz f = _xyz $ \(V3 a b c) -> f (V3 b a c) <&> \(V3 b' a' c') -> V3 a' b' c'
-{-# INLINE _yxz #-}
-
-_yzx f = _xyz $ \(V3 a b c) -> f (V3 b c a) <&> \(V3 b' c' a') -> V3 a' b' c'
-{-# INLINE _yzx #-}
-
-_zxy f = _xyz $ \(V3 a b c) -> f (V3 c a b) <&> \(V3 c' a' b') -> V3 a' b' c'
-{-# INLINE _zxy #-}
-
-_zyx f = _xyz $ \(V3 a b c) -> f (V3 c b a) <&> \(V3 c' b' a') -> V3 a' b' c'
-{-# INLINE _zyx #-}
-
-ez :: R3 t => E t
-ez = E _z
-
-instance R1 V3 where
-  _x f (V3 a b c) = (\a' -> V3 a' b c) <$> f a
-  {-# INLINE _x #-}
-
-instance R2 V3 where
-  _y f (V3 a b c) = (\b' -> V3 a b' c) <$> f b
-  {-# INLINE _y #-}
-  _xy f (V3 a b c) = (\(V2 a' b') -> V3 a' b' c) <$> f (V2 a b)
-  {-# INLINE _xy #-}
-
-instance R3 V3 where
-  _z f (V3 a b c) = V3 a b <$> f c
-  {-# INLINE _z #-}
-  _xyz = id
-  {-# INLINE _xyz #-}
 
 instance Storable a => Storable (V3 a) where
   sizeOf _ = 3 * sizeOf (undefined::a)
@@ -323,35 +255,6 @@ instance Ix a => Ix (V3 a) where
     inRange (l3,u3) i3
   {-# INLINE inRange #-}
 
-instance Representable V3 where
-  type Rep V3 = E V3
-  tabulate f = V3 (f ex) (f ey) (f ez)
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
-
-instance FunctorWithIndex (E V3) V3 where
-  imap f (V3 a b c) = V3 (f ex a) (f ey b) (f ez c)
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E V3) V3 where
-  ifoldMap f (V3 a b c) = f ex a `mappend` f ey b `mappend` f ez c
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E V3) V3 where
-  itraverse f (V3 a b c) = V3 <$> f ex a <*> f ey b <*> f ez c
-  {-# INLINE itraverse #-}
-
-type instance Index (V3 a) = E V3
-type instance IxValue (V3 a) = a
-
-instance Ixed (V3 a) where
-  ix = el
-  {-# INLINE ix #-}
-
-instance Each (V3 a) (V3 b) a b where
-  each = traverse
-  {-# INLINE each #-}
 
 data instance U.Vector    (V3 a) =  V_V3 {-# UNPACK #-} !Int !(U.Vector    a)
 data instance U.MVector s (V3 a) = MV_V3 {-# UNPACK #-} !Int !(U.MVector s a)

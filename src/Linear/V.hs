@@ -55,7 +55,7 @@ import Control.DeepSeq (NFData)
 import Control.Monad
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens as Lens
+--import Control.Lens as Lens
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Data
@@ -164,9 +164,6 @@ instance Functor (V n) where
   fmap f (V as) = V (fmap f as)
   {-# INLINE fmap #-}
 
-instance FunctorWithIndex Int (V n) where
-  imap f (V as) = V (Lens.imap f as)
-  {-# INLINE imap #-}
 
 instance Foldable (V n) where
   fold (V as) = fold as
@@ -208,17 +205,11 @@ instance Foldable (V n) where
 #endif
   
 
-instance FoldableWithIndex Int (V n) where
-  ifoldMap f (V as) = ifoldMap f as
-  {-# INLINE ifoldMap #-}
 
 instance Traversable (V n) where
   traverse f (V as) = V <$> traverse f as
   {-# INLINE traverse #-}
 
-instance TraversableWithIndex Int (V n) where
-  itraverse f (V as) = V <$> itraverse f as
-  {-# INLINE itraverse #-}
 
 instance Apply (V n) where
   V as <.> V bs = V (V.zipWith id as bs)
@@ -399,14 +390,7 @@ instance Dim n => Representable (V n) where
   index (V xs) i = xs V.! i
   {-# INLINE index #-}
 
-type instance Index (V n a) = Int
-type instance IxValue (V n a) = a
 
-instance Ixed (V n a) where
-  ix i f (V as)
-     | i < 0 || i >= V.length as = pure $ V as
-     | otherwise = f (as ! i) <&> \a -> V $ as V.// [(i, a)]
-  {-# INLINE ix #-}
 
 instance Dim n => MonadZip (V n) where
   mzip (V as) (V bs) = V $ V.zip as bs
@@ -415,9 +399,6 @@ instance Dim n => MonadZip (V n) where
 instance Dim n => MonadFix (V n) where
   mfix f = tabulate $ \r -> let a = Rep.index (f a) r in a
 
-instance Each (V n a) (V n b) a b where
-  each = traverse
-  {-# INLINE each #-}
 
 instance (Bounded a, Dim n) => Bounded (V n a) where
   minBound = pure minBound

@@ -27,20 +27,6 @@
 module Linear.V4
   ( V4(..)
   , vector, point, normalizePoint
-  , R1(..)
-  , R2(..)
-  , _yx
-  , R3(..)
-  , _xz, _yz, _zx, _zy
-  , _xzy, _yxz, _yzx, _zxy, _zyx
-  , R4(..)
-  , _xw, _yw, _zw, _wx, _wy, _wz
-  , _xyw, _xzw, _xwy, _xwz, _yxw, _yzw, _ywx, _ywz, _zxw, _zyw, _zwx, _zwy
-  , _wxy, _wxz, _wyx, _wyz, _wzx, _wzy
-  , _xywz, _xzyw, _xzwy, _xwyz, _xwzy, _yxzw , _yxwz, _yzxw, _yzwx, _ywxz
-  , _ywzx, _zxyw, _zxwy, _zyxw, _zywx, _zwxy, _zwyx, _wxyz, _wxzy, _wyxz
-  , _wyzx, _wzxy, _wzyx
-  , ex, ey, ez, ew
   ) where
 
 import Control.Applicative
@@ -48,7 +34,7 @@ import Control.DeepSeq (NFData(rnf))
 import Control.Monad (liftM)
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens hiding ((<.>))
+--import Control.Lens hiding ((<.>))
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Data
@@ -109,9 +95,6 @@ instance Foldable1 V4 where
   foldMap1 f (V4 a b c d) = f a <> f b <> f c <> f d
   {-# INLINE foldMap1 #-}
 
-instance Traversable1 V4 where
-  traverse1 f (V4 a b c d) = V4 <$> f a <.> f b <.> f c <.> f d
-  {-# INLINE traverse1 #-}
 
 instance Applicative V4 where
   pure a = V4 a a a a
@@ -226,184 +209,6 @@ instance Hashable a => Hashable (V4 a) where
   hashWithSalt s (V4 a b c d) = s `hashWithSalt` a `hashWithSalt` b `hashWithSalt` c `hashWithSalt` d
   {-# INLINE hashWithSalt #-}
 
--- | A space that distinguishes orthogonal basis vectors '_x', '_y', '_z', '_w'. (It may have more.)
-class R3 t => R4 t where
-  -- |
-  -- >>> V4 1 2 3 4 ^._w
-  -- 4
-  _w :: Lens' (t a) a
-  _xyzw :: Lens' (t a) (V4 a)
-
-_xw, _yw, _zw, _wx, _wy, _wz :: R4 t => Lens' (t a) (V2 a)
-_xw f = _xyzw $ \(V4 a b c d) -> f (V2 a d) <&> \(V2 a' d') -> V4 a' b c d'
-{-# INLINE _xw #-}
-
-_yw f = _xyzw $ \(V4 a b c d) -> f (V2 b d) <&> \(V2 b' d') -> V4 a b' c d'
-{-# INLINE _yw #-}
-
-_zw f = _xyzw $ \(V4 a b c d) -> f (V2 c d) <&> \(V2 c' d') -> V4 a b c' d'
-{-# INLINE _zw #-}
-
-_wx f = _xyzw $ \(V4 a b c d) -> f (V2 d a) <&> \(V2 d' a') -> V4 a' b c d'
-{-# INLINE _wx #-}
-
-_wy f = _xyzw $ \(V4 a b c d) -> f (V2 d b) <&> \(V2 d' b') -> V4 a b' c d'
-{-# INLINE _wy #-}
-
-_wz f = _xyzw $ \(V4 a b c d) -> f (V2 d c) <&> \(V2 d' c') -> V4 a b c' d'
-{-# INLINE _wz #-}
-
-_xyw, _xzw, _xwy, _xwz, _yxw, _yzw, _ywx, _ywz, _zxw, _zyw, _zwx, _zwy, _wxy, _wxz, _wyx, _wyz, _wzx, _wzy :: R4 t => Lens' (t a) (V3 a)
-_xyw f = _xyzw $ \(V4 a b c d) -> f (V3 a b d) <&> \(V3 a' b' d') -> V4 a' b' c d'
-{-# INLINE _xyw #-}
-
-_xzw f = _xyzw $ \(V4 a b c d) -> f (V3 a c d) <&> \(V3 a' c' d') -> V4 a' b c' d'
-{-# INLINE _xzw #-}
-
-_xwy f = _xyzw $ \(V4 a b c d) -> f (V3 a d b) <&> \(V3 a' d' b') -> V4 a' b' c d'
-{-# INLINE _xwy #-}
-
-_xwz f = _xyzw $ \(V4 a b c d) -> f (V3 a d c) <&> \(V3 a' d' c') -> V4 a' b c' d'
-{-# INLINE _xwz #-}
-
-_yxw f = _xyzw $ \(V4 a b c d) -> f (V3 b a d) <&> \(V3 b' a' d') -> V4 a' b' c d'
-{-# INLINE _yxw #-}
-
-_yzw f = _xyzw $ \(V4 a b c d) -> f (V3 b c d) <&> \(V3 b' c' d') -> V4 a b' c' d'
-{-# INLINE _yzw #-}
-
-_ywx f = _xyzw $ \(V4 a b c d) -> f (V3 b d a) <&> \(V3 b' d' a') -> V4 a' b' c d'
-{-# INLINE _ywx #-}
-
-_ywz f = _xyzw $ \(V4 a b c d) -> f (V3 b d c) <&> \(V3 b' d' c') -> V4 a b' c' d'
-{-# INLINE _ywz #-}
-
-_zxw f = _xyzw $ \(V4 a b c d) -> f (V3 c a d) <&> \(V3 c' a' d') -> V4 a' b c' d'
-{-# INLINE _zxw #-}
-
-_zyw f = _xyzw $ \(V4 a b c d) -> f (V3 c b d) <&> \(V3 c' b' d') -> V4 a b' c' d'
-{-# INLINE _zyw #-}
-
-_zwx f = _xyzw $ \(V4 a b c d) -> f (V3 c d a) <&> \(V3 c' d' a') -> V4 a' b c' d'
-{-# INLINE _zwx #-}
-
-_zwy f = _xyzw $ \(V4 a b c d) -> f (V3 c d b) <&> \(V3 c' d' b') -> V4 a b' c' d'
-{-# INLINE _zwy #-}
-
-_wxy f = _xyzw $ \(V4 a b c d) -> f (V3 d a b) <&> \(V3 d' a' b') -> V4 a' b' c d'
-{-# INLINE _wxy #-}
-
-_wxz f = _xyzw $ \(V4 a b c d) -> f (V3 d a c) <&> \(V3 d' a' c') -> V4 a' b c' d'
-{-# INLINE _wxz #-}
-
-_wyx f = _xyzw $ \(V4 a b c d) -> f (V3 d b a) <&> \(V3 d' b' a') -> V4 a' b' c d'
-{-# INLINE _wyx #-}
-
-_wyz f = _xyzw $ \(V4 a b c d) -> f (V3 d b c) <&> \(V3 d' b' c') -> V4 a b' c' d'
-{-# INLINE _wyz #-}
-
-_wzx f = _xyzw $ \(V4 a b c d) -> f (V3 d c a) <&> \(V3 d' c' a') -> V4 a' b c' d'
-{-# INLINE _wzx #-}
-
-_wzy f = _xyzw $ \(V4 a b c d) -> f (V3 d c b) <&> \(V3 d' c' b') -> V4 a b' c' d'
-{-# INLINE _wzy #-}
-
-_xywz, _xzyw, _xzwy, _xwyz, _xwzy, _yxzw , _yxwz, _yzxw, _yzwx, _ywxz
-  , _ywzx, _zxyw, _zxwy, _zyxw, _zywx, _zwxy, _zwyx, _wxyz, _wxzy, _wyxz
-  , _wyzx, _wzxy, _wzyx :: R4 t => Lens' (t a) (V4 a)
-_xywz f = _xyzw $ \(V4 a b c d) -> f (V4 a b d c) <&> \(V4 a' b' d' c') -> V4 a' b' c' d'
-{-# INLINE _xywz #-}
-
-_xzyw f = _xyzw $ \(V4 a b c d) -> f (V4 a c b d) <&> \(V4 a' c' b' d') -> V4 a' b' c' d'
-{-# INLINE _xzyw #-}
-
-_xzwy f = _xyzw $ \(V4 a b c d) -> f (V4 a c d b) <&> \(V4 a' c' d' b') -> V4 a' b' c' d'
-{-# INLINE _xzwy #-}
-
-_xwyz f = _xyzw $ \(V4 a b c d) -> f (V4 a d b c) <&> \(V4 a' d' b' c') -> V4 a' b' c' d'
-{-# INLINE _xwyz #-}
-
-_xwzy f = _xyzw $ \(V4 a b c d) -> f (V4 a d c b) <&> \(V4 a' d' c' b') -> V4 a' b' c' d'
-{-# INLINE _xwzy #-}
-
-_yxzw f = _xyzw $ \(V4 a b c d) -> f (V4 b a c d) <&> \(V4 b' a' c' d') -> V4 a' b' c' d'
-{-# INLINE _yxzw #-}
-
-_yxwz f = _xyzw $ \(V4 a b c d) -> f (V4 b a d c) <&> \(V4 b' a' d' c') -> V4 a' b' c' d'
-{-# INLINE _yxwz #-}
-
-_yzxw f = _xyzw $ \(V4 a b c d) -> f (V4 b c a d) <&> \(V4 b' c' a' d') -> V4 a' b' c' d'
-{-# INLINE _yzxw #-}
-
-_yzwx f = _xyzw $ \(V4 a b c d) -> f (V4 b c d a) <&> \(V4 b' c' d' a') -> V4 a' b' c' d'
-{-# INLINE _yzwx #-}
-
-_ywxz f = _xyzw $ \(V4 a b c d) -> f (V4 b d a c) <&> \(V4 b' d' a' c') -> V4 a' b' c' d'
-{-# INLINE _ywxz #-}
-
-_ywzx f = _xyzw $ \(V4 a b c d) -> f (V4 b d c a) <&> \(V4 b' d' c' a') -> V4 a' b' c' d'
-{-# INLINE _ywzx #-}
-
-_zxyw f = _xyzw $ \(V4 a b c d) -> f (V4 c a b d) <&> \(V4 c' a' b' d') -> V4 a' b' c' d'
-{-# INLINE _zxyw #-}
-
-_zxwy f = _xyzw $ \(V4 a b c d) -> f (V4 c a d b) <&> \(V4 c' a' d' b') -> V4 a' b' c' d'
-{-# INLINE _zxwy #-}
-
-_zyxw f = _xyzw $ \(V4 a b c d) -> f (V4 c b a d) <&> \(V4 c' b' a' d') -> V4 a' b' c' d'
-{-# INLINE _zyxw #-}
-
-_zywx f = _xyzw $ \(V4 a b c d) -> f (V4 c b d a) <&> \(V4 c' b' d' a') -> V4 a' b' c' d'
-{-# INLINE _zywx #-}
-
-_zwxy f = _xyzw $ \(V4 a b c d) -> f (V4 c d a b) <&> \(V4 c' d' a' b') -> V4 a' b' c' d'
-{-# INLINE _zwxy #-}
-
-_zwyx f = _xyzw $ \(V4 a b c d) -> f (V4 c d b a) <&> \(V4 c' d' b' a') -> V4 a' b' c' d'
-{-# INLINE _zwyx #-}
-
-_wxyz f = _xyzw $ \(V4 a b c d) -> f (V4 d a b c) <&> \(V4 d' a' b' c') -> V4 a' b' c' d'
-{-# INLINE _wxyz #-}
-
-_wxzy f = _xyzw $ \(V4 a b c d) -> f (V4 d a c b) <&> \(V4 d' a' c' b') -> V4 a' b' c' d'
-{-# INLINE _wxzy #-}
-
-_wyxz f = _xyzw $ \(V4 a b c d) -> f (V4 d b a c) <&> \(V4 d' b' a' c') -> V4 a' b' c' d'
-{-# INLINE _wyxz #-}
-
-_wyzx f = _xyzw $ \(V4 a b c d) -> f (V4 d b c a) <&> \(V4 d' b' c' a') -> V4 a' b' c' d'
-{-# INLINE _wyzx #-}
-
-_wzxy f = _xyzw $ \(V4 a b c d) -> f (V4 d c a b) <&> \(V4 d' c' a' b') -> V4 a' b' c' d'
-{-# INLINE _wzxy #-}
-
-_wzyx f = _xyzw $ \(V4 a b c d) -> f (V4 d c b a) <&> \(V4 d' c' b' a') -> V4 a' b' c' d'
-{-# INLINE _wzyx #-}
-
-ew :: R4 t => E t
-ew = E _w
-
-instance R1 V4 where
-  _x f (V4 a b c d) = (\a' -> V4 a' b c d) <$> f a
-  {-# INLINE _x #-}
-
-instance R2 V4 where
-  _y f (V4 a b c d) = (\b' -> V4 a b' c d) <$> f b
-  {-# INLINE _y #-}
-  _xy f (V4 a b c d) = (\(V2 a' b') -> V4 a' b' c d) <$> f (V2 a b)
-  {-# INLINE _xy #-}
-
-instance R3 V4 where
-  _z f (V4 a b c d) = (\c' -> V4 a b c' d) <$> f c
-  {-# INLINE _z #-}
-  _xyz f (V4 a b c d) = (\(V3 a' b' c') -> V4 a' b' c' d) <$> f (V3 a b c)
-  {-# INLINE _xyz #-}
-
-instance R4 V4 where
-  _w f (V4 a b c d) = V4 a b c <$> f d
-  {-# INLINE _w #-}
-  _xyzw = id
-  {-# INLINE _xyzw #-}
 
 instance Storable a => Storable (V4 a) where
   sizeOf _ = 4 * sizeOf (undefined::a)
@@ -467,33 +272,6 @@ instance Ix a => Ix (V4 a) where
     inRange (l3,u3) i3 && inRange (l4,u4) i4
   {-# INLINE inRange #-}
 
-instance Representable V4 where
-  type Rep V4 = E V4
-  tabulate f = V4 (f ex) (f ey) (f ez) (f ew)
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
-
-instance FunctorWithIndex (E V4) V4 where
-  imap f (V4 a b c d) = V4 (f ex a) (f ey b) (f ez c) (f ew d)
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E V4) V4 where
-  ifoldMap f (V4 a b c d) = f ex a `mappend` f ey b `mappend` f ez c `mappend` f ew d
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E V4) V4 where
-  itraverse f (V4 a b c d) = V4 <$> f ex a <*> f ey b <*> f ez c <*> f ew d
-  {-# INLINE itraverse #-}
-
-type instance Index (V4 a) = E V4
-type instance IxValue (V4 a) = a
-
-instance Ixed (V4 a) where
-  ix = el
-
-instance Each (V4 a) (V4 b) a b where
-  each = traverse
 
 data instance U.Vector    (V4 a) =  V_V4 {-# UNPACK #-} !Int !(U.Vector    a)
 data instance U.MVector s (V4 a) = MV_V4 {-# UNPACK #-} !Int !(U.MVector s a)

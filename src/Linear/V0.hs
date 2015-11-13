@@ -34,7 +34,7 @@ module Linear.V0
 
 import Control.Applicative
 import Control.DeepSeq (NFData(rnf))
-import Control.Lens
+--import Control.Lens
 import Control.Monad.Fix
 import Control.Monad.Zip
 import Data.Binary -- binary
@@ -233,36 +233,6 @@ instance Storable a => Storable (V0 a) where
   {-# INLINE poke #-}
   peek _ = return V0
   {-# INLINE peek #-}
-
-instance FunctorWithIndex (E V0) V0 where
-  imap _ V0 = V0
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E V0) V0 where
-  ifoldMap _ V0 = mempty
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E V0) V0 where
-  itraverse _ V0 = pure V0
-  {-# INLINE itraverse #-}
-
-instance Representable V0 where
-  type Rep V0 = E V0
-  tabulate _ = V0
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
-
-type instance Index (V0 a) = E V0
-type instance IxValue (V0 a) = a
-
-instance Ixed (V0 a) where
-  ix = el
-  {-# INLINE ix #-}
-
-instance Each (V0 a) (V0 b) a b where
-  each = traverse
-  {-# INLINE each #-}
 
 newtype instance U.Vector    (V0 a) = V_V0 Int
 newtype instance U.MVector s (V0 a) = MV_V0 Int

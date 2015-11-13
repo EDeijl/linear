@@ -18,28 +18,22 @@
 ---------------------------------------------------------------------------
 module Linear.Matrix
   ( (!*!), (!+!), (!-!), (!*), (*!), (!!*), (*!!), (!!/)
-  , column
   , adjoint
   , M22, M23, M24, M32, M33, M34, M42, M43, M44
   , m33_to_m44, m43_to_m44
   , det22, det33, det44, inv22, inv33, inv44
-  , identity
   , Trace(..)
-  , translation
   , transpose
   , fromQuaternion
   , mkTransformation
   , mkTransformationMat
-  , _m22, _m23, _m24
-  , _m32, _m33, _m34
-  , _m42, _m43, _m44
   ) where
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 #endif
-import Control.Lens hiding (index)
-import Control.Lens.Internal.Context
+--import Control.Lens hiding (index)
+--import Control.Lens.Internal.Context
 import Data.Distributive
 import Data.Foldable as Foldable
 import Data.Functor.Rep
@@ -55,24 +49,6 @@ import Linear.Trace
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 #endif
 
--- | This is a generalization of 'Control.Lens.inside' to work over any corepresentable 'Functor'.
---
--- @
--- 'column' :: 'Representable' f => 'Lens' s t a b -> 'Lens' (f s) (f t) (f a) (f b)
--- @
---
--- In practice it is used to access a column of a matrix.
---
--- >>> V2 (V3 1 2 3) (V3 4 5 6) ^._x
--- V3 1 2 3
---
--- >>> V2 (V3 1 2 3) (V3 4 5 6) ^.column _x
--- V2 1 4
-column :: Representable f => LensLike (Context a b) s t a b -> Lens (f s) (f t) (f a) (f b)
-column l f es = o <$> f i where
-   go = l (Context id)
-   i = tabulate $ \ e -> ipos $ go (index es e)
-   o eb = tabulate $ \ e -> ipeek (index eb e) (go (index es e))
 
 -- $setup
 -- >>> import Data.Complex
@@ -231,72 +207,7 @@ m33_to_m44 :: Num a => M33 a -> M44 a
 m33_to_m44 (V3 r1 r2 r3) = V4 (vector r1) (vector r2) (vector r3) (point 0)
 {-# ANN m33_to_m44 "HLint: ignore Use camelCase" #-}
 
--- |The identity matrix for any dimension vector.
---
--- >>> identity :: M44 Int
--- V4 (V4 1 0 0 0) (V4 0 1 0 0) (V4 0 0 1 0) (V4 0 0 0 1)
--- >>> identity :: V3 (V3 Int)
--- V3 (V3 1 0 0) (V3 0 1 0) (V3 0 0 1)
-identity :: (Num a, Traversable t, Applicative t) => t (t a)
-identity = scaled (pure 1)
 
--- |Extract the translation vector (first three entries of the last
--- column) from a 3x4 or 4x4 matrix.
-translation :: (Representable t, R3 t, R4 v) => Lens' (t (v a)) (V3 a)
-translation = column _w._xyz
-{-
-translation f rs = aux <$> f (view _w <$> view _xyz rs)
- where aux (V3 x y z) = (_x._w .~ x) . (_y._w .~ y) . (_z._w .~ z) $ rs
-
--- translation :: (R3 t, R4 v, Functor f, Functor t) => (V3 a -> f (V3 a)) -> t (v a) -> f (t a)
--- translation = (. fmap (^._w)) . _xyz where
---   x ^. l = getConst (l Const x)
--}
-
--- |Extract a 2x2 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m22 :: (Representable t, R2 t, R2 v) => Lens' (t (v a)) (M22 a)
-_m22 = column _xy._xy
-
--- |Extract a 2x3 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m23 :: (Representable t, R2 t, R3 v) => Lens' (t (v a)) (M23 a)
-_m23 = column _xyz._xy
-
--- |Extract a 2x4 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m24 :: (Representable t, R2 t, R4 v) => Lens' (t (v a)) (M24 a)
-_m24 = column _xyzw._xy
-
--- |Extract a 3x2 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m32 :: (Representable t, R3 t, R2 v) => Lens' (t (v a)) (M32 a)
-_m32 = column _xy._xyz
-
--- |Extract a 3x3 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m33 :: (Representable t, R3 t, R3 v) => Lens' (t (v a)) (M33 a)
-_m33 = column _xyz._xyz
-
--- |Extract a 3x4 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m34 :: (Representable t, R3 t, R4 v) => Lens' (t (v a)) (M34 a)
-_m34 = column _xyzw._xyz
-
--- |Extract a 4x2 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m42 :: (Representable t, R4 t, R2 v) => Lens' (t (v a)) (M42 a)
-_m42 = column _xy._xyzw
-
--- |Extract a 4x3 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m43 :: (Representable t, R4 t, R3 v) => Lens' (t (v a)) (M43 a)
-_m43 = column _xyz._xyzw
-
--- |Extract a 4x4 matrix from a matrix of higher dimensions by dropping excess
--- rows and columns.
-_m44 :: (Representable t, R4 t, R4 v) => Lens' (t (v a)) (M44 a)
-_m44 = column _xyzw._xyzw
 
 -- |2x2 matrix determinant.
 --

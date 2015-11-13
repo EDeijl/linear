@@ -40,13 +40,6 @@ module Linear.Plucker
   , isLine
   , coincides
   , coincides'
-  -- * Basis elements
-  ,      p01, p02, p03
-  , p10,      p12, p13
-  , p20, p21,      p23
-  , p30, p31, p32
-
-  , e01, e02, e03, e12, e31, e23
   ) where
 
 import Control.Applicative
@@ -54,7 +47,7 @@ import Control.DeepSeq (NFData(rnf))
 import Control.Monad (liftM)
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens hiding (index, (<.>))
+--import Control.Lens hiding (index, (<.>))
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Distributive
@@ -153,12 +146,7 @@ instance Distributive Plucker where
                          (fmap (\(Plucker _ _ _ _ _ x) -> x) f)
   {-# INLINE distribute #-}
 
-instance Representable Plucker where
-  type Rep Plucker = E Plucker
-  tabulate f = Plucker (f e01) (f e02) (f e03) (f e23) (f e31) (f e12)
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
+
 
 instance Foldable Plucker where
   foldMap g (Plucker a b c d e f) =
@@ -175,10 +163,6 @@ instance Foldable1 Plucker where
     g a <> g b <> g c <> g d <> g e <> g f
   {-# INLINE foldMap1 #-}
 
-instance Traversable1 Plucker where
-  traverse1 g (Plucker a b c d e f) =
-    Plucker <$> g a <.> g b <.> g c <.> g d <.> g e <.> g f
-  {-# INLINE traverse1 #-}
 
 instance Ix a => Ix (Plucker a) where
   range (Plucker l1 l2 l3 l4 l5 l6,Plucker u1 u2 u3 u4 u5 u6) =
@@ -324,89 +308,10 @@ plucker3D p q = Plucker a b c d e f
   where V3 a b c = p - q
         V3 d e f = p `cross` q
 
--- | These elements form a basis for the Plücker space, or the Grassmanian manifold @Gr(2,V4)@.
---
--- @
--- 'p01' :: 'Lens'' ('Plucker' a) a
--- 'p02' :: 'Lens'' ('Plucker' a) a
--- 'p03' :: 'Lens'' ('Plucker' a) a
--- 'p23' :: 'Lens'' ('Plucker' a) a
--- 'p31' :: 'Lens'' ('Plucker' a) a
--- 'p12' :: 'Lens'' ('Plucker' a) a
--- @
-p01, p02, p03, p23, p31, p12 :: Lens' (Plucker a) a
-p01 g (Plucker a b c d e f) = (\a' -> Plucker a' b c d e f) <$> g a
-p02 g (Plucker a b c d e f) = (\b' -> Plucker a b' c d e f) <$> g b
-p03 g (Plucker a b c d e f) = (\c' -> Plucker a b c' d e f) <$> g c
-p23 g (Plucker a b c d e f) = (\d' -> Plucker a b c d' e f) <$> g d
-p31 g (Plucker a b c d e f) = (\e' -> Plucker a b c d e' f) <$> g e
-p12 g (Plucker a b c d e f) = Plucker a b c d e <$> g f
-{-# INLINE p01 #-}
-{-# INLINE p02 #-}
-{-# INLINE p03 #-}
-{-# INLINE p23 #-}
-{-# INLINE p31 #-}
-{-# INLINE p12 #-}
 
--- | These elements form an alternate basis for the Plücker space, or the Grassmanian manifold @Gr(2,V4)@.
---
--- @
--- 'p10' :: 'Num' a => 'Lens'' ('Plucker' a) a
--- 'p20' :: 'Num' a => 'Lens'' ('Plucker' a) a
--- 'p30' :: 'Num' a => 'Lens'' ('Plucker' a) a
--- 'p32' :: 'Num' a => 'Lens'' ('Plucker' a) a
--- 'p13' :: 'Num' a => 'Lens'' ('Plucker' a) a
--- 'p21' :: 'Num' a => 'Lens'' ('Plucker' a) a
--- @
-p10, p20, p30, p32, p13, p21 :: (Functor f, Num a) => (a -> f a) -> Plucker a -> f (Plucker a)
-p10 = anti p01
-p20 = anti p02
-p30 = anti p03
-p32 = anti p23
-p13 = anti p31
-p21 = anti p21
-{-# INLINE p10 #-}
-{-# INLINE p20 #-}
-{-# INLINE p30 #-}
-{-# INLINE p32 #-}
-{-# INLINE p13 #-}
-{-# INLINE p21 #-}
 
 anti :: (Functor f, Num a) => ((a -> f a) -> r) -> (a -> f a) -> r
 anti k f = k (fmap negate . f . negate)
-
-e01, e02, e03, e23, e31, e12 :: E Plucker
-e01 = E p01
-e02 = E p02
-e03 = E p03
-e23 = E p23
-e31 = E p31
-e12 = E p12
-
-instance FunctorWithIndex (E Plucker) Plucker where
-  imap f (Plucker a b c d e g) = Plucker (f e01 a) (f e02 b) (f e03 c) (f e23 d) (f e31 e) (f e12 g)
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E Plucker) Plucker where
-  ifoldMap f (Plucker a b c d e g) = f e01 a `mappend` f e02 b `mappend` f e03 c
-                           `mappend` f e23 d `mappend` f e31 e `mappend` f e12 g
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E Plucker) Plucker where
-  itraverse f (Plucker a b c d e g) = Plucker <$> f e01 a <*> f e02 b <*> f e03 c
-                                              <*> f e23 d <*> f e31 e <*> f e12 g
-  {-# INLINE itraverse #-}
-
-type instance Index (Plucker a) = E Plucker
-type instance IxValue (Plucker a) = a
-
-instance Ixed (Plucker a) where
-  ix = el
-  {-# INLINE ix #-}
-
-instance Each (Plucker a) (Plucker b) a b where
-  each = traverse
-  {-# INLINE each #-}
 
 
 -- | Valid Plücker coordinates @p@ will have @'squaredError' p '==' 0@

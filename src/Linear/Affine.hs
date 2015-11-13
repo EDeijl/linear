@@ -30,7 +30,7 @@ module Linear.Affine where
 import Control.Applicative
 import Control.DeepSeq
 import Control.Monad (liftM)
-import Control.Lens
+--import Control.Lens
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Complex (Complex)
@@ -116,7 +116,6 @@ ADDITIVE(Complex)
 ADDITIVE(ZipList)
 ADDITIVE(Maybe)
 ADDITIVE(IntMap)
-ADDITIVE(Identity)
 ADDITIVE(Vector)
 ADDITIVE(V0)
 ADDITIVE(V1)
@@ -176,65 +175,13 @@ instance forall f. Typeable1 f => Typeable1 (Point f) where
 deriving instance (Data (f a), Typeable1 f, Typeable a) => Data (Point f a)
 #endif
 
-lensP :: Lens' (Point g a) (g a)
-lensP afb (P a) = P <$> afb a
-{-# INLINE lensP #-}
 
-_Point :: Iso' (Point f a) (f a)
-_Point = iso (\(P a) -> a) P
-{-# INLINE _Point #-}
-
-instance (t ~ Point g b) => Rewrapped (Point f a) t
-instance Wrapped (Point f a) where
-  type Unwrapped (Point f a) = f a
-  _Wrapped' = _Point
-  {-# INLINE _Wrapped' #-}
 
 instance Bind f => Bind (Point f) where
   join (P m) = P $ join $ fmap (\(P m')->m') m
 
 instance Distributive f => Distributive (Point f) where
   distribute = P . collect (\(P p) -> p)
-
-instance Representable f => Representable (Point f) where
-  type Rep (Point f) = Rep f
-  tabulate f = P (tabulate f)
-  {-# INLINE tabulate #-}
-  index (P xs) = Rep.index xs
-  {-# INLINE index #-}
-
-type instance Index (Point f a) = Index (f a)
-type instance IxValue (Point f a) = IxValue (f a)
-
-instance Ixed (f a) => Ixed (Point f a) where
-  ix l = lensP . ix l
-  {-# INLINE ix #-}
-
-instance Traversable f => Each (Point f a) (Point f b) a b where
-  each = traverse
-  {-# INLINE each #-}
-
-instance R1 f => R1 (Point f) where
-  _x = lensP . _x
-  {-# INLINE _x #-}
-
-instance R2 f => R2 (Point f) where
-  _y = lensP . _y
-  {-# INLINE _y #-}
-  _xy = lensP . _xy
-  {-# INLINE _xy #-}
-
-instance R3 f => R3 (Point f) where
-  _z = lensP . _z
-  {-# INLINE _z #-}
-  _xyz = lensP . _xyz
-  {-# INLINE _xyz #-}
-
-instance R4 f => R4 (Point f) where
-  _w = lensP . _w
-  {-# INLINE _w #-}
-  _xyzw = lensP . _xyzw
-  {-# INLINE _xyzw #-}
 
 instance Additive f => Affine (Point f) where
   type Diff (Point f) = f
@@ -248,12 +195,6 @@ instance Additive f => Affine (Point f) where
 -- | Vector spaces have origins.
 origin :: (Additive f, Num a) => Point f a
 origin = P zero
-
--- | An isomorphism between points and vectors, given a reference
---   point.
-relative :: (Additive f, Num a) => Point f a -> Iso' (Point f a) (f a)
-relative p0 = iso (.-. p0) (p0 .+^)
-{-# INLINE relative #-}
 
 data instance U.Vector    (Point f a) =  V_P !(U.Vector    (f a))
 data instance U.MVector s (Point f a) = MV_P !(U.MVector s (f a))

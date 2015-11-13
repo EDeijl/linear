@@ -34,8 +34,6 @@
 ----------------------------------------------------------------------------
 module Linear.V1
   ( V1(..)
-  , R1(..)
-  , ex
   ) where
 
 import Control.Applicative
@@ -43,7 +41,7 @@ import Control.DeepSeq (NFData)
 import Control.Monad (liftM)
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens
+--import Control.Lens
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Serialize as Cereal
@@ -78,7 +76,7 @@ import qualified Data.Vector.Unboxed.Base as U
 #endif
 
 -- $setup
--- >>> import Control.Lens
+-- >>> --import Control.Lens
 
 -- | A 1-dimensional vector
 --
@@ -111,9 +109,6 @@ instance Foldable1 V1 where
   foldMap1 f (V1 a) = f a
   {-# INLINE foldMap1 #-}
 
-instance Traversable1 V1 where
-  traverse1 f (V1 a) = V1 <$> f a
-  {-# INLINE traverse1 #-}
 
 instance Apply V1 where
   V1 f <.> V1 x = V1 (f x)
@@ -215,27 +210,6 @@ instance Metric V1 where
   dot (V1 a) (V1 b) = a * b
   {-# INLINE dot #-}
 
--- | A space that has at least 1 basis vector '_x'.
-class R1 t where
-  -- |
-  -- >>> V1 2 ^._x
-  -- 2
-  --
-  -- >>> V1 2 & _x .~ 3
-  -- V1 3
-  --
-  _x :: Lens' (t a) a
-
-ex :: R1 t => E t
-ex = E _x
-
-instance R1 V1 where
-  _x f (V1 a) = V1 <$> f a
-  {-# INLINE _x #-}
-
-instance R1 Identity where
-  _x f (Identity a) = Identity <$> f a
-  {-# INLINE _x #-}
 
 instance Distributive V1 where
   distribute f = V1 (fmap (\(V1 x) -> x) f)
@@ -254,35 +228,7 @@ instance Ix a => Ix (V1 a) where
   inRange (V1 l1,V1 u1) (V1 i1) = inRange (l1,u1) i1
   {-# INLINE inRange #-}
 
-instance Representable V1 where
-  type Rep V1 = E V1
-  tabulate f = V1 (f ex)
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
 
-instance FunctorWithIndex (E V1) V1 where
-  imap f (V1 a) = V1 (f ex a)
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E V1) V1 where
-  ifoldMap f (V1 a) = f ex a
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E V1) V1 where
-  itraverse f (V1 a) = V1 <$> f ex a
-  {-# INLINE itraverse #-}
-
-type instance Index (V1 a) = E V1
-type instance IxValue (V1 a) = a
-
-instance Ixed (V1 a) where
-  ix = el
-  {-# INLINE ix #-}
-
-instance Each (V1 a) (V1 b) a b where
-  each f (V1 x) = V1 <$> f x
-  {-# INLINE each #-}
 
 newtype instance U.Vector    (V1 a) = V_V1  (U.Vector    a)
 newtype instance U.MVector s (V1 a) = MV_V1 (U.MVector s a)

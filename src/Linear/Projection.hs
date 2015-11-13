@@ -16,14 +16,13 @@
 -- purpose means
 ---------------------------------------------------------------------------
 module Linear.Projection
-  ( lookAt
-  , perspective, inversePerspective
+  ( perspective, inversePerspective
   , infinitePerspective, inverseInfinitePerspective
   , frustum, inverseFrustum
   , ortho, inverseOrtho
   ) where
 
-import Control.Lens hiding (index)
+--import Control.Lens hiding (index)
 import Linear.V3
 import Linear.V4
 import Linear.Matrix
@@ -34,24 +33,6 @@ import Linear.Metric
 {-# ANN module "HLint: ignore Reduce duplication" #-}
 #endif
 
--- | Build a look at view matrix
-lookAt
-  :: (Epsilon a, Floating a)
-  => V3 a -- ^ Eye
-  -> V3 a -- ^ Center
-  -> V3 a -- ^ Up
-  -> M44 a
-lookAt eye center up =
-  V4 (V4 (xa^._x)  (xa^._y)  (xa^._z)  xd)
-     (V4 (ya^._x)  (ya^._y)  (ya^._z)  yd)
-     (V4 (-za^._x) (-za^._y) (-za^._z) zd)
-     (V4 0         0         0          1)
-  where za = normalize $ center - eye
-        xa = normalize $ cross za up
-        ya = cross xa za
-        xd = -dot xa eye
-        yd = -dot ya eye
-        zd = dot za eye
 
 -- | Build a matrix for a symmetric perspective-view frustum
 perspective

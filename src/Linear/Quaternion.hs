@@ -26,9 +26,6 @@
 ----------------------------------------------------------------------------
 module Linear.Quaternion
   ( Quaternion(..)
-  , Complicated(..)
-  , Hamiltonian(..)
-  , ee, ei, ej, ek
   , slerp
   , asinq
   , acosq
@@ -47,7 +44,7 @@ import Control.DeepSeq (NFData(rnf))
 import Control.Monad (liftM)
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens hiding ((<.>))
+--import Control.Lens hiding ((<.>))
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Complex (Complex((:+)))
@@ -151,35 +148,6 @@ instance Ix a => Ix (Quaternion a) where
       inRange (l1,u1) i1 && inRange (l2,u2) i2
     {-# INLINE inRange #-}
 
-instance Representable Quaternion where
-  type Rep Quaternion = E Quaternion
-  tabulate f = Quaternion (f ee) (V3 (f ei) (f ej) (f ek))
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
-
-instance FunctorWithIndex (E Quaternion) Quaternion where
-  imap f (Quaternion a (V3 b c d)) = Quaternion (f ee a) $ V3 (f ei b) (f ej c) (f ek d)
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E Quaternion) Quaternion where
-  ifoldMap f (Quaternion a (V3 b c d)) = f ee a `mappend` f ei b `mappend` f ej c `mappend` f ek d
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E Quaternion) Quaternion where
-  itraverse f (Quaternion a (V3 b c d)) = Quaternion <$> f ee a <*> (V3 <$> f ei b <*> f ej c <*> f ek d)
-  {-# INLINE itraverse #-}
-
-type instance Index (Quaternion a) = E Quaternion
-type instance IxValue (Quaternion a) = a
-
-instance Ixed (Quaternion a) where
-  ix = el
-  {-# INLINE ix #-}
-
-instance Each (Quaternion a) (Quaternion b) a b where
-  each = traverse
-  {-# INLINE each #-}
 
 instance Foldable Quaternion where
   foldMap f (Quaternion e v) = f e `mappend` foldMap f v
@@ -270,42 +238,9 @@ instance Metric Quaternion where
   Quaternion e v `dot` Quaternion e' v' = e*e' + (v `dot` v')
   {-# INLINE dot #-}
 
--- | A vector space that includes the basis elements '_e' and '_i'
-class Complicated t where
-  _e, _i :: Lens' (t a) a
 
-ee, ei :: Complicated t => E t
-ee = E _e
-ei = E _i
 
-instance Complicated Complex where
-  _e f (a :+ b) = (:+ b) <$> f a
-  {-# INLINE _e #-}
-  _i f (a :+ b) = (a :+) <$> f b
-  {-# INLINE _i #-}
 
-instance Complicated Quaternion where
-  _e f (Quaternion a v) = (`Quaternion` v) <$> f a
-  {-# INLINE _e #-}
-  _i f (Quaternion a v) = Quaternion a <$> _x f v
-  {-# INLINE _i #-}
-
--- | A vector space that includes the basis elements '_e', '_i', '_j' and '_k'
-class Complicated t => Hamiltonian t where
-  _j, _k :: Lens' (t a) a
-  _ijk :: Lens' (t a) (V3 a)
-
-ej, ek :: Hamiltonian t => E t
-ej = E _j
-ek = E _k
-
-instance Hamiltonian Quaternion where
-  _j f (Quaternion a v) = Quaternion a <$> _y f v
-  {-# INLINE _j #-}
-  _k f (Quaternion a v) = Quaternion a <$> _z f v
-  {-# INLINE _k #-}
-  _ijk f (Quaternion a v) = Quaternion a <$> f v
-  {-# INLINE _ijk #-}
 
 instance Distributive Quaternion where
   distribute f = Quaternion (fmap (\(Quaternion x _) -> x) f) $ V3

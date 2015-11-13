@@ -27,10 +27,6 @@
 ----------------------------------------------------------------------------
 module Linear.V2
   ( V2(..)
-  , R1(..)
-  , R2(..)
-  , _yx
-  , ex, ey
   , perp
   , angle
   ) where
@@ -40,7 +36,7 @@ import Control.DeepSeq (NFData(rnf))
 import Control.Monad (liftM)
 import Control.Monad.Fix
 import Control.Monad.Zip
-import Control.Lens hiding ((<.>))
+--import Control.Lens hiding ((<.>))
 import Data.Binary as Binary
 import Data.Bytes.Serial
 import Data.Data
@@ -68,11 +64,11 @@ import qualified Data.Vector.Unboxed.Base as U
 import Linear.Metric
 import Linear.Epsilon
 import Linear.Vector
-import Linear.V1 (R1(..),ex)
+import Linear.V1 ()
 import Prelude hiding (sum)
 
 -- $setup
--- >>> import Control.Lens
+-- >>> --import Control.Lens
 
 -- | A 2-dimensional vector
 --
@@ -115,10 +111,6 @@ instance Traversable V2 where
 instance Foldable1 V2 where
   foldMap1 f (V2 a b) = f a <> f b
   {-# INLINE foldMap1 #-}
-
-instance Traversable1 V2 where
-  traverse1 f (V2 a b) = V2 <$> f a <.> f b
-  {-# INLINE traverse1 #-}
 
 instance Apply V2 where
   V2 a b <.> V2 d e = V2 (a d) (b e)
@@ -222,40 +214,6 @@ instance Metric V2 where
   dot (V2 a b) (V2 c d) = a * c + b * d
   {-# INLINE dot #-}
 
--- | A space that distinguishes 2 orthogonal basis vectors '_x' and '_y', but may have more.
-class R1 t => R2 t where
-  -- |
-  -- >>> V2 1 2 ^._y
-  -- 2
-  --
-  -- >>> V2 1 2 & _y .~ 3
-  -- V2 1 3
-  --
-  _y :: Lens' (t a) a
-  _y = _xy._y
-  {-# INLINE _y #-}
-
-  _xy :: Lens' (t a) (V2 a)
-
--- |
--- >>> V2 1 2 ^. _yx
--- V2 2 1
-_yx :: R2 t => Lens' (t a) (V2 a)
-_yx f = _xy $ \(V2 a b) -> f (V2 b a) <&> \(V2 b' a') -> V2 a' b'
-{-# INLINE _yx #-}
-
-ey :: R2 t => E t
-ey = E _y
-
-instance R1 V2 where
-  _x f (V2 a b) = (`V2` b) <$> f a
-  {-# INLINE _x #-}
-
-instance R2 V2 where
-  _y f (V2 a b) = V2 a <$> f b
-  {-# INLINE _y #-}
-  _xy = id
-  {-# INLINE _xy #-}
 
 instance Distributive V2 where
   distribute f = V2 (fmap (\(V2 x _) -> x) f) (fmap (\(V2 _ y) -> y) f)
@@ -300,35 +258,6 @@ instance Ix a => Ix (V2 a) where
     inRange (l1,u1) i1 && inRange (l2,u2) i2
   {-# INLINE inRange #-}
 
-instance Representable V2 where
-  type Rep V2 = E V2
-  tabulate f = V2 (f ex) (f ey)
-  {-# INLINE tabulate #-}
-  index xs (E l) = view l xs
-  {-# INLINE index #-}
-
-instance FunctorWithIndex (E V2) V2 where
-  imap f (V2 a b) = V2 (f ex a) (f ey b)
-  {-# INLINE imap #-}
-
-instance FoldableWithIndex (E V2) V2 where
-  ifoldMap f (V2 a b) = f ex a `mappend` f ey b
-  {-# INLINE ifoldMap #-}
-
-instance TraversableWithIndex (E V2) V2 where
-  itraverse f (V2 a b) = V2 <$> f ex a <*> f ey b
-  {-# INLINE itraverse #-}
-
-type instance Index (V2 a) = E V2
-type instance IxValue (V2 a) = a
-
-instance Ixed (V2 a) where
-  ix = el
-  {-# INLINE ix #-}
-
-instance Each (V2 a) (V2 b) a b where
-  each = traverse
-  {-# INLINE each #-}
 
 data instance U.Vector    (V2 a) =  V_V2 {-# UNPACK #-} !Int !(U.Vector    a)
 data instance U.MVector s (V2 a) = MV_V2 {-# UNPACK #-} !Int !(U.MVector s a)
